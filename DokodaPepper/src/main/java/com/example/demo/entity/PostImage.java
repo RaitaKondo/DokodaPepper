@@ -11,6 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 
 @Entity
@@ -23,6 +25,7 @@ private Long id;
 
 @ManyToOne
 @JoinColumn(name = "post_id", nullable = false)
+@JsonIgnore   // Ignore this field in JSON serialization to avoid circular reference issues. データ取得時に親が子を、子が親を参照するため、無限ループになるのを防ぐ。JPA, hibernetで起きやすいエラー
 private Post post;
 
 @Column(name = "image_url", nullable = false)
