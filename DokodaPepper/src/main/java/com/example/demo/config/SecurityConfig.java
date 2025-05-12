@@ -50,7 +50,7 @@ public class SecurityConfig {
         http
         .cors(Customizer.withDefaults())
         .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/register", "/api/login", "/api/logout", "/api/user")
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/register", "/api/login", "/api/user")
                         .permitAll().anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .logout(logout -> logout.logoutUrl("/api/logout") // ログアウトエンドポイント
