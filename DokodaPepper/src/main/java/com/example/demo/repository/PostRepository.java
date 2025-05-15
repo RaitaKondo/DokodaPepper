@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.example.demo.entity.Post;
+import com.example.demo.entity.User;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
     // Postエンティティに関連するクエリメソッドをここに記述
     // 例: List<Post> findByTitleContaining(String title);
     // 例: List<Post> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    List<Post> findByUser(User user);
 
     
 

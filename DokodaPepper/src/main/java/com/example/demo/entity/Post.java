@@ -30,8 +30,8 @@ public class Post {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "area_id", nullable = false)
-    private Area area;
+    @JoinColumn(name = "city_id", nullable = false)
+    private City city;
     
     @Column(columnDefinition = "TEXT")
     private String content;
@@ -44,4 +44,13 @@ public class Post {
     
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostImage> images;
+    
+    @Column(name = "latitude")
+    private Double latitude;
+    
+    @Column(name = "longitude")
+    private Double longitude;
+    
+    @Column(name = "address")
+    private String address;
 }
