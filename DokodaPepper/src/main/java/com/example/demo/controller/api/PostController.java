@@ -11,6 +11,9 @@ import java.util.UUID;
 import jakarta.transaction.Transactional;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,7 +29,7 @@ import com.example.demo.entity.Post;
 import com.example.demo.entity.PostImage;
 import com.example.demo.entity.User;
 import com.example.demo.form.PostForm;
-import com.example.demo.repository.AreaRepository;
+import com.example.demo.repository.CityRepository;
 import com.example.demo.repository.FoundItRepository;
 import com.example.demo.repository.PostImageRepository;
 import com.example.demo.repository.PostRepository;
@@ -38,16 +41,16 @@ import com.example.demo.service.PostService;
 public class PostController {
 
     private final PostService postService;
-    private final AreaRepository areaRepository;
+    private final CityRepository cityRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final FoundItRepository foundItRepository;
     private final PostImageRepository postImageRepository;
 
-    public PostController(PostService postService, AreaRepository areaRepository, UserRepository userRepository,
+    public PostController(PostService postService, CityRepository cityRepository, UserRepository userRepository,
             PostRepository postRepository, FoundItRepository foundItRepository, PostImageRepository postImageRepository) {
         this.postService = postService;
-        this.areaRepository = areaRepository;
+        this.cityRepository = cityRepository;
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.foundItRepository = foundItRepository;
@@ -76,7 +79,8 @@ public class PostController {
 
     @GetMapping("/posts")
     public Page<Post> getPosts(@RequestParam(defaultValue = "0") int page) {
-        return postService.getPosts(page);
+        Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
+        return postService.getPosts(pageable);
     }
     
 
@@ -99,8 +103,8 @@ public class PostController {
             post.setAddress(postForm.getAddress());
             post.setUser(userOpt.get());
 
-            if (postForm.getAreaId() != null) {
-                areaRepository.findById(postForm.getAreaId()).ifPresent(post::setArea);
+            if (postForm.getCityId() != null) {
+                cityRepository.findById(postForm.getCityId()).ifPresent(post::setCity);
             }
 
             // Postを保存
@@ -108,6 +112,14 @@ public class PostController {
 
             int order = 1; // 画像の順序を管理するための変数
             // 画像を保存
+            
+            if (postForm.getImages() == null || postForm.getImages().isEmpty()) {
+                PostImage postImage = new PostImage();
+                postImage.setPost(savedPost);
+                postImage.setImageUrl("/images/default.jpg"); // デフォルト画像を設定");
+                postImage.setSortOrder(1);
+                postImageRepository.save(postImage);
+            }
             for (MultipartFile image : postForm.getImages()) {
                 String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
                 Path path = Paths.get("src/main/resources/static/images", fileName);
