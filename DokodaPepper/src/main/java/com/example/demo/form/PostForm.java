@@ -13,7 +13,7 @@ public class PostForm {
     private Double latitude;
     private Double longitude;
     private String address;
-    private Long areaId;
+    private Long cityId;
     private List<MultipartFile> images;
 
 }

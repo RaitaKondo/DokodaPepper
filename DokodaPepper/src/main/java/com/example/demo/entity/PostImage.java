@@ -27,6 +27,7 @@ private Long id;
 @JoinColumn(name = "post_id", nullable = false)
 @JsonIgnore   // Ignore this field in JSON serialization to avoid circular reference issues. データ取得時に親が子を、子が親を参照するため、無限ループになるのを防ぐ。JPA, hibernetで起きやすいエラー
 private Post post;
+//@ManyToOne + @JoinColumn を使って Post を直接受け取るのは、JPAのリレーション管理を最大限活用するためです。「ID」だけを持つとオブジェクト指向の利点を活かせない、"ただのRDB的" な設計になってしまいます。
 
 @Column(name = "image_url", nullable = false)
 private String imageUrl;
