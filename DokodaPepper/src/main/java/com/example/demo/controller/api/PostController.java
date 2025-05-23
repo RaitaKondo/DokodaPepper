@@ -18,8 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -86,7 +86,7 @@ public class PostController {
 
     @PostMapping("/postNew")
     @Transactional
-    public ResponseEntity<?> createPost(@RequestBody PostForm postForm, Authentication authentication) {
+    public ResponseEntity<?> createPost(@ModelAttribute PostForm postForm, Authentication authentication) {
         // ユーザー情報を取得 疎結合性を維持するためにauthentication.getPrincipal()は使用しない。
         try {
             String username = authentication.getName();
@@ -94,6 +94,8 @@ public class PostController {
             if (userOpt.isEmpty()) {
                 throw new RuntimeException("User not found");
             }
+            
+            System.out.println("PostForm: " + postForm);
 
             // Postを作成
             Post post = new Post();
