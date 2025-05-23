@@ -11,6 +11,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
@@ -36,9 +39,11 @@ private String imageUrl;
 private Integer sortOrder = 0;
 
 @Column(name = "created_at", updatable = false)
+@CreationTimestamp
 private LocalDateTime createdAt;
 
 @Column(name = "updated_at")
+@UpdateTimestamp
 private LocalDateTime updatedAt;
 
 }

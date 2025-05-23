@@ -10,6 +10,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import lombok.Data;
 
 @Entity
@@ -31,5 +33,6 @@ public class FoundIt {
     private Post post;
 
     @Column(name = "found_at", updatable = false)
+    @CreationTimestamp
     private LocalDateTime foundAt;
 }
