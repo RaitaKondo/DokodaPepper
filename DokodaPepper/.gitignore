@@ -5,6 +5,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+### images folda ###
+/src/main/resources/static/images/
+
+
 ### STS ###
 .apt_generated
 .classpath
