@@ -37,6 +37,11 @@ public class Post {
     @JoinColumn(name = "city_id", nullable = false)
     private City city;
     
+    // prefecture_id を返すヘルパーメソッド
+    public String getPrefectureName() {
+        return city.getPrefecture().getName();
+    }
+    
     @Column(columnDefinition = "TEXT")
     private String content;
     
