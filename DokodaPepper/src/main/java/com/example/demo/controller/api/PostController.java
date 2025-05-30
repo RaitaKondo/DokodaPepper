@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -83,6 +84,30 @@ public class PostController {
 //        Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
 //        return postService.getPosts(pageable);
 //    }
+    
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<PostReturnForm> getPostById(@RequestParam Long postId) {
+        Optional<Post> postOpt = postRepository.findById(postId);
+        if (postOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        Post post = postOpt.get();
+        PostReturnForm postReturnForm = new PostReturnForm();
+        postReturnForm.setPostId(post.getId());
+        postReturnForm.setContent(post.getContent());
+        postReturnForm.setCreatedAt(post.getCreatedAt());
+        postReturnForm.setUpdatedAt(post.getUpdatedAt());
+        postReturnForm.setUserName(post.getUser().getUsername());
+        postReturnForm.setCity(post.getCity());
+        postReturnForm.setImages(post.getImages());
+        postReturnForm.setPrefectureName(post.getPrefectureName());
+        postReturnForm.setLatitude(post.getLatitude());
+        postReturnForm.setLongitude(post.getLongitude());
+        postReturnForm.setAddress(post.getAddress());
+
+        return ResponseEntity.ok(postReturnForm);
+    }
 
     @GetMapping("/posts")
     public Page<PostReturnForm> getPosts(@RequestParam(defaultValue = "0") int page) {
@@ -108,7 +133,7 @@ public class PostController {
 
     @PostMapping("/postNew")
     @Transactional
-    public ResponseEntity<?> createPost(@ModelAttribute PostForm postForm, Authentication authentication) {
+    public ResponseEntity<?> createPost( @Validated @ModelAttribute PostForm postForm, Authentication authentication) {
         // ユーザー情報を取得 疎結合性を維持するためにauthentication.getPrincipal()は使用しない。
         try {
             String username = authentication.getName();
