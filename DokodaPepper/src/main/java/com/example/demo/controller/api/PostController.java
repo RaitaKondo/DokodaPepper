@@ -65,31 +65,7 @@ public class PostController {
         this.prefectureRepository = PrefectureRepository;
     }
 
-//    @GetMapping("/test")
-//    public String test() {
-//        return "test test";
-//    }
-//
-//    @GetMapping("/all")
-//    public List<Post> getAllPost() {
-//        return postService.getAllPosts();
-//    }
-//
-//    @GetMapping("/getOne")
-//    public Post getPostById() {
-//        return postService.getSingle();
-//    }
-//
-//    @GetMapping("/getForTop")
-//    public List<Post> getForTop() {
-//        return postService.getTop6Posts();
-//    }
 
-//    @GetMapping("/posts")
-//    public Page<Post> getPosts(@RequestParam(defaultValue = "0") int page) {
-//        Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
-//        return postService.getPosts(pageable);
-//    }
     
     @GetMapping("/posts/{postId}")
     public ResponseEntity<PostReturnForm> getPostById(@RequestParam Long postId) {
@@ -113,6 +89,32 @@ public class PostController {
         postReturnForm.setAddress(post.getAddress());
 
         return ResponseEntity.ok(postReturnForm);
+    }
+    
+    @GetMapping("/posts/{postId}/delite")
+    @Transactional
+    @PreAuthorize("#id == principal.id or hasRole('ADMIN')")
+    public ResponseEntity<String> delitePostById(@RequestParam Long postId) {
+        Optional<Post> postOpt = postRepository.findById(postId);
+//        if (postOpt.isEmpty()) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        }
+//
+//        Post post = postOpt.get();
+//        PostReturnForm postReturnForm = new PostReturnForm();
+//        postReturnForm.setPostId(post.getId());
+//        postReturnForm.setContent(post.getContent());
+//        postReturnForm.setCreatedAt(post.getCreatedAt());
+//        postReturnForm.setUpdatedAt(post.getUpdatedAt());
+//        postReturnForm.setUserName(post.getUser().getUsername());
+//        postReturnForm.setCity(post.getCity());
+//        postReturnForm.setImages(post.getImages());
+//        postReturnForm.setPrefectureName(post.getPrefectureName());
+//        postReturnForm.setLatitude(post.getLatitude());
+//        postReturnForm.setLongitude(post.getLongitude());
+//        postReturnForm.setAddress(post.getAddress());
+
+        return ResponseEntity.ok("ok");
     }
     
     @PostMapping("/posts/{postId}/edited")

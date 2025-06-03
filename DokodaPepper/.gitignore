@@ -8,6 +8,8 @@ build/
 ### images folda ###
 /src/main/resources/static/images/
 
+### Eclipse ###
+.properties
 
 ### STS ###
 .apt_generated
