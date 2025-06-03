@@ -37,6 +37,10 @@ public class Post {
     @JoinColumn(name = "city_id", nullable = false)
     private City city;
     
+    @ManyToOne
+    @JoinColumn(name = "prefecture_id", nullable = false)
+    private Prefecture prefecture;
+    
     // prefecture_id を返すヘルパーメソッド
     public String getPrefectureName() {
         return city.getPrefecture().getName();

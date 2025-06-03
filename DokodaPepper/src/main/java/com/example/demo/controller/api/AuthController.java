@@ -1,5 +1,8 @@
 package com.example.demo.controller.api;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,18 +16,22 @@ import com.example.demo.repository.PrefectureRepository;
 public class AuthController {
     private PrefectureRepository prefectureRepository;
     private CityRepository cityRepository;
-    
+
     AuthController() {
         this.prefectureRepository = prefectureRepository;
         this.cityRepository = cityRepository;
     }
-    
+
     @GetMapping("/api/user")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未ログイン");
         }
-        return ResponseEntity.ok(authentication.getName());
+
+        Map<String, String> userInfo = new HashMap<>();
+        userInfo.put("username", authentication.getName());
+
+        return ResponseEntity.ok(userInfo);
     }
 
 }

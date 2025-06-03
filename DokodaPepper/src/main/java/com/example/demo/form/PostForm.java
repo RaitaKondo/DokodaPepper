@@ -19,6 +19,7 @@ public class PostForm {
     private Double longitude;
     private String address;
     private Long cityId;
+    private Long prefectureId;
     private List<MultipartFile> images;
 
 }

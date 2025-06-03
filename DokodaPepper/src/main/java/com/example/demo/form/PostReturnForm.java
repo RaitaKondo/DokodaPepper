@@ -37,4 +37,7 @@ public class PostReturnForm {
     private Double longitude;
 
     private String address;
+
+    private Long prefectureId;
+    
 }
