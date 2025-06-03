@@ -8,8 +8,9 @@ build/
 ### images folda ###
 /src/main/resources/static/images/
 
-### Eclipse ###
-.properties
+# Spring Boot settings
+application.properties
+
 
 ### STS ###
 .apt_generated
