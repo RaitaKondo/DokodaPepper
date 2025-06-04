@@ -33,6 +33,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     Page<Post> findByPrefectureId(Long id, Pageable pageable);
     
+    Page<Post> findByCity_Id(Long cityId, Pageable pageable);
+
 
 }
 

@@ -226,6 +226,29 @@ public class PostController {
         });
         return postReturnForms;
     }
+    
+    @GetMapping("/posts/prefecture/{prefectureId}/city/{cityId}")
+    public Page<PostReturnForm> getPostsByPrefAndCity(@RequestParam(defaultValue = "0") int page, @PathVariable Long cityId) {
+        Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
+        Page<PostReturnForm> postReturnForms = postRepository.findByCity_Id(cityId, pageable).map(post -> {
+            PostReturnForm postReturnForm = new PostReturnForm();
+            postReturnForm.setPostId(post.getId());
+            postReturnForm.setContent(post.getContent());
+            postReturnForm.setCreatedAt(post.getCreatedAt());
+            postReturnForm.setUpdatedAt(post.getUpdatedAt());
+            postReturnForm.setUserName(post.getUser().getUsername());
+            postReturnForm.setCity(post.getCity());
+            postReturnForm.setImages(post.getImages());
+            postReturnForm.setPrefectureName(post.getPrefectureName());
+            postReturnForm.setLatitude(post.getLatitude());
+            postReturnForm.setLongitude(post.getLongitude());
+            postReturnForm.setAddress(post.getAddress());
+            postReturnForm.setPrefectureId(post.getCity().getPrefecture().getId());
+
+            return postReturnForm;
+        });
+        return postReturnForms;
+    }
 
     @PostMapping("/postNew")
     @Transactional
