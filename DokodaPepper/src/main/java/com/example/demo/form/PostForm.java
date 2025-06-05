@@ -13,7 +13,7 @@ import lombok.Data;
 public class PostForm {
 
     @NotBlank(message = "タイトルは必須です")
-    @Size(max = 200, message = "タイトルは100文字以下で入力してください")
+    @Size(max = 50, message = "タイトルは50文字以下で入力してください")
     private String content;
     private Double latitude;
     private Double longitude;

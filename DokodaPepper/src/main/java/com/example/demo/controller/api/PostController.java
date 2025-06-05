@@ -53,8 +53,7 @@ public class PostController {
     private final PrefectureRepository prefectureRepository;
 
     public PostController(PostService postService, CityRepository cityRepository, UserRepository userRepository,
-            PostRepository postRepository, FoundItRepository foundItRepository,
-            PostImageRepository postImageRepository,
+            PostRepository postRepository, FoundItRepository foundItRepository, PostImageRepository postImageRepository,
             PrefectureRepository PrefectureRepository) {
         this.postService = postService;
         this.cityRepository = cityRepository;
@@ -65,32 +64,6 @@ public class PostController {
         this.prefectureRepository = PrefectureRepository;
     }
 
-//    @GetMapping("/test")
-//    public String test() {
-//        return "test test";
-//    }
-//
-//    @GetMapping("/all")
-//    public List<Post> getAllPost() {
-//        return postService.getAllPosts();
-//    }
-//
-//    @GetMapping("/getOne")
-//    public Post getPostById() {
-//        return postService.getSingle();
-//    }
-//
-//    @GetMapping("/getForTop")
-//    public List<Post> getForTop() {
-//        return postService.getTop6Posts();
-//    }
-
-//    @GetMapping("/posts")
-//    public Page<Post> getPosts(@RequestParam(defaultValue = "0") int page) {
-//        Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
-//        return postService.getPosts(pageable);
-//    }
-    
     @GetMapping("/posts/{postId}")
     public ResponseEntity<PostReturnForm> getPostById(@RequestParam Long postId) {
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -114,11 +87,12 @@ public class PostController {
 
         return ResponseEntity.ok(postReturnForm);
     }
-    
+
     @PostMapping("/posts/{postId}/edited")
     @Transactional
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> editPost( @Validated @ModelAttribute PostForm postForm, Authentication authentication) {
+    public ResponseEntity<?> editPost(@Validated @ModelAttribute PostForm postForm, Authentication authentication,
+            @PathVariable Long postId) {
         // ユーザー情報を取得 疎結合性を維持するためにauthentication.getPrincipal()は使用しない。
         try {
             String username = authentication.getName();
@@ -127,57 +101,43 @@ public class PostController {
                 throw new RuntimeException("User not found");
             }
 
-            System.out.println("PostForm: " + postForm);
-
             // Postを作成
-            Post post = new Post();
-            post.setContent(postForm.getContent());
-            post.setLatitude(postForm.getLatitude());
-            post.setLongitude(postForm.getLongitude());
-            post.setAddress(postForm.getAddress());
-            post.setUser(userOpt.get());
+            Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+            if (!post.getUser().getUsername().equals(username)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("この投稿を編集する権限がありません。");
+            }
 
-            if (postForm.getPrefectureId() != null) {
-                prefectureRepository.findById(postForm.getPrefectureId()).ifPresent(post::setPrefecture);
-            }
-            if (postForm.getCityId() != null) {
-                cityRepository.findById(postForm.getCityId()).ifPresent(post::setCity);
-            }
+            post.setContent(postForm.getContent());
 
             // Postを保存
-            Post savedPost = postRepository.save(post);
-
-            int order = 1; // 画像の順序を管理するための変数
-            // 画像を保存
-
-            if (postForm.getImages() == null || postForm.getImages().isEmpty()) {
-                PostImage postImage = new PostImage();
-                postImage.setPost(savedPost);
-                postImage.setImageUrl("/images/default.jpg"); // デフォルト画像を設定");
-                postImage.setSortOrder(1);
-                postImageRepository.save(postImage);
-            } else {
-
-                for (MultipartFile image : postForm.getImages()) {
-                    String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-                    Path path = Paths.get("src/main/resources/static/images", fileName);
-                    Files.copy(image.getInputStream(), path);
-
-                    PostImage postImage = new PostImage();
-                    postImage.setPost(savedPost);
-                    postImage.setImageUrl("/images/" + fileName);
-                    postImage.setSortOrder(order++);
-                    postImageRepository.save(postImage);
-                }
-            }
+            postRepository.save(post);
 
             return ResponseEntity.ok("ok");
 
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("画像の保存中にエラーが発生しました: " + e.getMessage());
-
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("投稿の作成に失敗しました: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/posts/{postId}/delete")
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> editPost(Authentication authentication, @PathVariable Long postId) {
+        // ユーザー情報を取得 疎結合性を維持するためにauthentication.getPrincipal()は使用しない。
+        try {
+            String username = authentication.getName();
+            User user = userRepository.findByUsername(username).orElseThrow(()-> new RuntimeException("User not found"));
+            
+            Post post = postRepository.findById(postId).orElseThrow(()-> new RuntimeException("Post not found"));
+            if (!post.getUser().getId().equals(user.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("この投稿を削除する権限がありません。");
+            }
+            postRepository.deleteById(postId);
+
+            return ResponseEntity.ok("ok");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("投稿の削除に失敗しました: " + e.getMessage());
         }
     }
 
@@ -205,7 +165,8 @@ public class PostController {
     }
 
     @GetMapping("/posts/prefecture/{prefectureId}")
-    public Page<PostReturnForm> getPostsByPref(@RequestParam(defaultValue = "0") int page, @PathVariable Long prefectureId) {
+    public Page<PostReturnForm> getPostsByPref(@RequestParam(defaultValue = "0") int page,
+            @PathVariable Long prefectureId) {
         Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
         Page<PostReturnForm> postReturnForms = postRepository.findByPrefectureId(prefectureId, pageable).map(post -> {
             PostReturnForm postReturnForm = new PostReturnForm();
@@ -226,9 +187,10 @@ public class PostController {
         });
         return postReturnForms;
     }
-    
+
     @GetMapping("/posts/prefecture/{prefectureId}/city/{cityId}")
-    public Page<PostReturnForm> getPostsByPrefAndCity(@RequestParam(defaultValue = "0") int page, @PathVariable Long cityId) {
+    public Page<PostReturnForm> getPostsByPrefAndCity(@RequestParam(defaultValue = "0") int page,
+            @PathVariable Long cityId) {
         Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
         Page<PostReturnForm> postReturnForms = postRepository.findByCity_Id(cityId, pageable).map(post -> {
             PostReturnForm postReturnForm = new PostReturnForm();
@@ -253,7 +215,7 @@ public class PostController {
     @PostMapping("/postNew")
     @Transactional
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> createPost( @Validated @ModelAttribute PostForm postForm, Authentication authentication) {
+    public ResponseEntity<?> createPost(@Validated @ModelAttribute PostForm postForm, Authentication authentication) {
         // ユーザー情報を取得 疎結合性を維持するためにauthentication.getPrincipal()は使用しない。
         try {
             String username = authentication.getName();
@@ -315,7 +277,5 @@ public class PostController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("投稿の作成に失敗しました: " + e.getMessage());
         }
     }
-
-
 
 }
