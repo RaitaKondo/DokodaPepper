@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.entity.FoundIt;
+import com.example.demo.entity.FoundItId;
 import com.example.demo.entity.Post;
 import com.example.demo.entity.PostImage;
 import com.example.demo.entity.User;
@@ -126,9 +128,10 @@ public class PostController {
         // ユーザー情報を取得 疎結合性を維持するためにauthentication.getPrincipal()は使用しない。
         try {
             String username = authentication.getName();
-            User user = userRepository.findByUsername(username).orElseThrow(()-> new RuntimeException("User not found"));
-            
-            Post post = postRepository.findById(postId).orElseThrow(()-> new RuntimeException("Post not found"));
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
             if (!post.getUser().getId().equals(user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("この投稿を削除する権限がありません。");
             }
@@ -158,6 +161,7 @@ public class PostController {
             postReturnForm.setLongitude(post.getLongitude());
             postReturnForm.setAddress(post.getAddress());
             postReturnForm.setPrefectureId(post.getCity().getPrefecture().getId());
+//            postReturnForm.setNumberOfFoundIt(foundItRepository.countByPost_Id(post.getId()));
 
             return postReturnForm;
         });
@@ -246,7 +250,6 @@ public class PostController {
 
             int order = 1; // 画像の順序を管理するための変数
             // 画像を保存
-
             if (postForm.getImages() == null || postForm.getImages().isEmpty()) {
                 PostImage postImage = new PostImage();
                 postImage.setPost(savedPost);
@@ -255,6 +258,7 @@ public class PostController {
                 postImageRepository.save(postImage);
             } else {
 
+            //postFormで受け取った時点ではimages[]になっている。リアクトから出した時点では複数の　images　”バイナリー”で出る。
                 for (MultipartFile image : postForm.getImages()) {
                     String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
                     Path path = Paths.get("src/main/resources/static/images", fileName);
@@ -276,6 +280,30 @@ public class PostController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("投稿の作成に失敗しました: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/posts/{postId}/found")
+    public ResponseEntity<Long> getFoundCounter(@PathVariable Long postId) {
+        Long foundCounter = foundItRepository.countByPost_Id(postId);
+        return ResponseEntity.ok(foundCounter);
+    }
+    
+    @PostMapping("posts/{postId}/found")
+    public ResponseEntity<String> foundPepper(@PathVariable Long postId, Authentication authentication){
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
+        Post post = postRepository.findById(postId).orElseThrow(()-> new RuntimeException("Post not found"));
+        
+        FoundItId foundItId = new FoundItId(user.getId(), post.getId());
+        if(foundItRepository.existsById(foundItId)) {
+            foundItRepository.deleteById(foundItId);
+            return ResponseEntity.ok("found it removed");
+        }
+        
+        FoundIt foundIt = new FoundIt(user, post);
+        foundItRepository.save(foundIt);
+        
+        return ResponseEntity.ok("found it added");
     }
 
 }

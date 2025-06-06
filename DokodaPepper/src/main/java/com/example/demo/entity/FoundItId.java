@@ -11,4 +11,13 @@ import lombok.Data;
 public class FoundItId implements Serializable {
     private Long userId;
     private Long postId;
+    
+    public FoundItId() {
+        // デフォルトコンストラクタ
+    }
+
+    public FoundItId(Long userId, Long postId) {
+        this.userId = userId;
+        this.postId = postId;
+    }
 }

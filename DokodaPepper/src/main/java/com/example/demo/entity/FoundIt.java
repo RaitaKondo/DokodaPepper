@@ -35,4 +35,15 @@ public class FoundIt {
     @Column(name = "found_at", updatable = false)
     @CreationTimestamp
     private LocalDateTime foundAt;
+    
+    public FoundIt() {
+    }
+    
+    public FoundIt(User user, Post post) {
+        this.id = new FoundItId();
+        this.id.setUserId(user.getId());
+        this.id.setPostId(post.getId());
+        this.user = user;
+        this.post = post;
+    }
 }
