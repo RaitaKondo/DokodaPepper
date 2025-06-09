@@ -40,4 +40,12 @@ public class PostReturnForm {
 
     private Long prefectureId;
     
+    private Long numberOfFoundIt;
+
+    private Long numberOfReported;
+    
+    private boolean foundIt;
+
+    private boolean reported;
+    
 }

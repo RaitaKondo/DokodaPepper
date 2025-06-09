@@ -31,6 +31,8 @@ import com.example.demo.entity.FoundIt;
 import com.example.demo.entity.FoundItId;
 import com.example.demo.entity.Post;
 import com.example.demo.entity.PostImage;
+import com.example.demo.entity.Report;
+import com.example.demo.entity.ReportId;
 import com.example.demo.entity.User;
 import com.example.demo.form.PostForm;
 import com.example.demo.form.PostReturnForm;
@@ -39,6 +41,7 @@ import com.example.demo.repository.FoundItRepository;
 import com.example.demo.repository.PostImageRepository;
 import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.PrefectureRepository;
+import com.example.demo.repository.ReportRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.PostService;
 
@@ -53,10 +56,11 @@ public class PostController {
     private final FoundItRepository foundItRepository;
     private final PostImageRepository postImageRepository;
     private final PrefectureRepository prefectureRepository;
+    private final ReportRepository reportRepository;
 
     public PostController(PostService postService, CityRepository cityRepository, UserRepository userRepository,
             PostRepository postRepository, FoundItRepository foundItRepository, PostImageRepository postImageRepository,
-            PrefectureRepository PrefectureRepository) {
+            PrefectureRepository PrefectureRepository, ReportRepository reportRepository) {
         this.postService = postService;
         this.cityRepository = cityRepository;
         this.userRepository = userRepository;
@@ -64,6 +68,7 @@ public class PostController {
         this.foundItRepository = foundItRepository;
         this.postImageRepository = postImageRepository;
         this.prefectureRepository = PrefectureRepository;
+        this.reportRepository = reportRepository;
     }
 
     @GetMapping("/posts/{postId}")
@@ -145,7 +150,7 @@ public class PostController {
     }
 
     @GetMapping("/posts")
-    public Page<PostReturnForm> getPosts(@RequestParam(defaultValue = "0") int page) {
+    public Page<PostReturnForm> getPosts(@RequestParam(defaultValue = "0") int page, Authentication authentication) {
         Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
         Page<PostReturnForm> postReturnForms = postRepository.findAll(pageable).map(post -> {
             PostReturnForm postReturnForm = new PostReturnForm();
@@ -161,7 +166,23 @@ public class PostController {
             postReturnForm.setLongitude(post.getLongitude());
             postReturnForm.setAddress(post.getAddress());
             postReturnForm.setPrefectureId(post.getCity().getPrefecture().getId());
-//            postReturnForm.setNumberOfFoundIt(foundItRepository.countByPost_Id(post.getId()));
+
+            String username = authentication.getName();
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            Post postish = postRepository.findById(post.getId())
+                    .orElseThrow(() -> new RuntimeException("Post not found"));
+
+            FoundItId foundItId = new FoundItId(user.getId(), postish.getId());
+            boolean isFoundIt = foundItRepository.existsById(foundItId);
+            postReturnForm.setFoundIt(isFoundIt);
+
+            ReportId reportId = new ReportId(user.getId(), postish.getId());
+            boolean isReported = reportRepository.existsById(reportId);
+            postReturnForm.setReported(isReported);
+
+            postReturnForm.setNumberOfFoundIt(foundItRepository.countByPost_Id(post.getId()));
+            postReturnForm.setNumberOfReported(reportRepository.countByPost_Id(post.getId()));
 
             return postReturnForm;
         });
@@ -170,7 +191,7 @@ public class PostController {
 
     @GetMapping("/posts/prefecture/{prefectureId}")
     public Page<PostReturnForm> getPostsByPref(@RequestParam(defaultValue = "0") int page,
-            @PathVariable Long prefectureId) {
+            @PathVariable Long prefectureId, Authentication authentication) {
         Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
         Page<PostReturnForm> postReturnForms = postRepository.findByPrefectureId(prefectureId, pageable).map(post -> {
             PostReturnForm postReturnForm = new PostReturnForm();
@@ -187,6 +208,15 @@ public class PostController {
             postReturnForm.setAddress(post.getAddress());
             postReturnForm.setPrefectureId(post.getCity().getPrefecture().getId());
 
+            String username = authentication.getName();
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            Post postish = postRepository.findById(post.getId())
+                    .orElseThrow(() -> new RuntimeException("Post not found"));
+
+            FoundItId foundItId = new FoundItId(user.getId(), postish.getId());
+            boolean isFoundIt = foundItRepository.existsById(foundItId);
+            postReturnForm.setFoundIt(isFoundIt);
             return postReturnForm;
         });
         return postReturnForms;
@@ -194,7 +224,7 @@ public class PostController {
 
     @GetMapping("/posts/prefecture/{prefectureId}/city/{cityId}")
     public Page<PostReturnForm> getPostsByPrefAndCity(@RequestParam(defaultValue = "0") int page,
-            @PathVariable Long cityId) {
+            @PathVariable Long cityId, Authentication authentication) {
         Pageable pageable = PageRequest.of(page, 15, Sort.by(Sort.Direction.DESC, "id"));
         Page<PostReturnForm> postReturnForms = postRepository.findByCity_Id(cityId, pageable).map(post -> {
             PostReturnForm postReturnForm = new PostReturnForm();
@@ -210,7 +240,15 @@ public class PostController {
             postReturnForm.setLongitude(post.getLongitude());
             postReturnForm.setAddress(post.getAddress());
             postReturnForm.setPrefectureId(post.getCity().getPrefecture().getId());
+            String username = authentication.getName();
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            Post postish = postRepository.findById(post.getId())
+                    .orElseThrow(() -> new RuntimeException("Post not found"));
 
+            FoundItId foundItId = new FoundItId(user.getId(), postish.getId());
+            boolean isFoundIt = foundItRepository.existsById(foundItId);
+            postReturnForm.setFoundIt(isFoundIt);
             return postReturnForm;
         });
         return postReturnForms;
@@ -258,7 +296,7 @@ public class PostController {
                 postImageRepository.save(postImage);
             } else {
 
-            //postFormで受け取った時点ではimages[]になっている。リアクトから出した時点では複数の　images　”バイナリー”で出る。
+                // postFormで受け取った時点ではimages[]になっている。リアクトから出した時点では複数の images ”バイナリー”で出る。
                 for (MultipartFile image : postForm.getImages()) {
                     String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
                     Path path = Paths.get("src/main/resources/static/images", fileName);
@@ -287,23 +325,52 @@ public class PostController {
         Long foundCounter = foundItRepository.countByPost_Id(postId);
         return ResponseEntity.ok(foundCounter);
     }
-    
+
     @PostMapping("posts/{postId}/found")
-    public ResponseEntity<String> foundPepper(@PathVariable Long postId, Authentication authentication){
+    public ResponseEntity<String> foundPepper(@PathVariable Long postId, Authentication authentication) {
         String username = authentication.getName();
         User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
-        Post post = postRepository.findById(postId).orElseThrow(()-> new RuntimeException("Post not found"));
-        
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+
         FoundItId foundItId = new FoundItId(user.getId(), post.getId());
-        if(foundItRepository.existsById(foundItId)) {
+        if (foundItRepository.existsById(foundItId)) {
             foundItRepository.deleteById(foundItId);
             return ResponseEntity.ok("found it removed");
         }
-        
+
         FoundIt foundIt = new FoundIt(user, post);
         foundItRepository.save(foundIt);
-        
+
         return ResponseEntity.ok("found it added");
     }
 
+    @PostMapping("posts/{postId}/report")
+    public ResponseEntity<String> reportPost(@PathVariable Long postId, Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElseThrow(()-> new RuntimeException("User not found"));
+        Post post = postRepository.findById(postId).orElseThrow(()->new RuntimeException("Post not found"));
+        
+        ReportId reportId = new ReportId(user.getId(), post.getId());
+        
+        if(reportRepository.existsById(reportId)) {
+            reportRepository.deleteById(reportId);
+            return ResponseEntity.ok("report removed");
+        }
+        
+        Report report = new Report(user, post);
+        reportRepository.save(report);
+        return ResponseEntity.ok("report added");
+    }
+
+//    @GetMapping("/posts/{postId}/isFoundIt")
+//    public ResponseEntity<Boolean> isFoundIt(@PathVariable Long postId, Authentication authentication) {
+//        String username = authentication.getName();
+//        User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
+//        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+//
+//        FoundItId foundItId = new FoundItId(user.getId(), post.getId());
+//        boolean isFoundIt = foundItRepository.existsById(foundItId);
+//
+//        return ResponseEntity.ok(isFoundIt);
+//    }
 }
