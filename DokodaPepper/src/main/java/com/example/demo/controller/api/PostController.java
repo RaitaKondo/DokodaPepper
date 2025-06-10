@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,11 +24,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.entity.Comment;
 import com.example.demo.entity.FoundIt;
 import com.example.demo.entity.FoundItId;
 import com.example.demo.entity.Post;
@@ -34,9 +38,12 @@ import com.example.demo.entity.PostImage;
 import com.example.demo.entity.Report;
 import com.example.demo.entity.ReportId;
 import com.example.demo.entity.User;
+import com.example.demo.form.CommentForm;
+import com.example.demo.form.CommentReturnForm;
 import com.example.demo.form.PostForm;
 import com.example.demo.form.PostReturnForm;
 import com.example.demo.repository.CityRepository;
+import com.example.demo.repository.CommentRepository;
 import com.example.demo.repository.FoundItRepository;
 import com.example.demo.repository.PostImageRepository;
 import com.example.demo.repository.PostRepository;
@@ -49,6 +56,7 @@ import com.example.demo.service.PostService;
 @RequestMapping("/api")
 public class PostController {
 
+    private final CommentRepository commentRepository;
     private final PostService postService;
     private final CityRepository cityRepository;
     private final UserRepository userRepository;
@@ -60,7 +68,8 @@ public class PostController {
 
     public PostController(PostService postService, CityRepository cityRepository, UserRepository userRepository,
             PostRepository postRepository, FoundItRepository foundItRepository, PostImageRepository postImageRepository,
-            PrefectureRepository PrefectureRepository, ReportRepository reportRepository) {
+            PrefectureRepository PrefectureRepository, ReportRepository reportRepository,
+            CommentRepository commentRepository) {
         this.postService = postService;
         this.cityRepository = cityRepository;
         this.userRepository = userRepository;
@@ -69,6 +78,7 @@ public class PostController {
         this.postImageRepository = postImageRepository;
         this.prefectureRepository = PrefectureRepository;
         this.reportRepository = reportRepository;
+        this.commentRepository = commentRepository;
     }
 
     @GetMapping("/posts/{postId}")
@@ -93,6 +103,35 @@ public class PostController {
         postReturnForm.setAddress(post.getAddress());
 
         return ResponseEntity.ok(postReturnForm);
+    }
+
+    @GetMapping("/posts/{postId}/comments")
+    public ResponseEntity<List<CommentReturnForm>> getComments(@PathVariable Long postId) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        List<Comment> comments = commentRepository.findByPostOrderByCreatedAtDesc(post);
+        List<CommentReturnForm> commentReturnForms = comments.stream()
+                .map((comment) -> new CommentReturnForm(comment.getId(), comment.getUser().getUsername(),
+                        comment.getContent(), comment.getCreatedAt()))
+                .toList();
+        return ResponseEntity.ok(commentReturnForms);
+    }
+
+    @PostMapping("/posts/{postId}/comments")
+    public ResponseEntity<?> addComment(@PathVariable Long postId, @Valid @RequestBody CommentForm form,
+            Authentication authentication) {
+
+        User user = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+
+        Comment comment = new Comment();
+        comment.setContent(form.getContent());
+        comment.setUser(user);
+        comment.setPost(post);
+
+        commentRepository.save(comment);
+
+        return ResponseEntity.ok("コメントを投稿しました");
     }
 
     @PostMapping("/posts/{postId}/edited")
@@ -347,16 +386,16 @@ public class PostController {
     @PostMapping("posts/{postId}/report")
     public ResponseEntity<String> reportPost(@PathVariable Long postId, Authentication authentication) {
         String username = authentication.getName();
-        User user = userRepository.findByUsername(username).orElseThrow(()-> new RuntimeException("User not found"));
-        Post post = postRepository.findById(postId).orElseThrow(()->new RuntimeException("Post not found"));
-        
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+
         ReportId reportId = new ReportId(user.getId(), post.getId());
-        
-        if(reportRepository.existsById(reportId)) {
+
+        if (reportRepository.existsById(reportId)) {
             reportRepository.deleteById(reportId);
             return ResponseEntity.ok("report removed");
         }
-        
+
         Report report = new Report(user, post);
         reportRepository.save(report);
         return ResponseEntity.ok("report added");

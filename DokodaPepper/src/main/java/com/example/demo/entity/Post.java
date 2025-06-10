@@ -18,6 +18,8 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.Data;
 
 @Entity
@@ -51,10 +53,12 @@ public class Post {
     
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS") // ミリ秒まで
     private LocalDateTime createdAt;
     
     @Column(name="updated_at")
     @UpdateTimestamp
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS") // ミリ秒まで
     private LocalDateTime updatedAt;
     
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
