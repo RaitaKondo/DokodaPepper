@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -299,10 +300,19 @@ public class PostController {
     public ResponseEntity<?> createPost(@Validated @ModelAttribute PostForm postForm, Authentication authentication) {
         // ユーザー情報を取得 疎結合性を維持するためにauthentication.getPrincipal()は使用しない。
         try {
-            String username = authentication.getName();
-            Optional<User> userOpt = userRepository.findByUsername(username);
-            if (userOpt.isEmpty()) {
-                throw new RuntimeException("User not found");
+            String optUsername = authentication.getName();
+            Optional<User> userOpt = userRepository.findByUsername(optUsername);
+            if(userOpt.isEmpty()) {
+                throw new RuntimeException("user not found");
+            }
+            
+            Optional<Post> latestPostOpt = postRepository.findLatestByUser(userOpt.get());
+            if (latestPostOpt.isPresent()) {
+                LocalDateTime latest = latestPostOpt.get().getCreatedAt();
+                if (latest.isAfter(LocalDateTime.now().minusMinutes(1))) {
+                    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                            .body("投稿の間隔を1分以上あけてください。");
+                }
             }
 
             System.out.println("PostForm: " + postForm);
