@@ -125,6 +125,13 @@ public class PostController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
 
+        // 1分以内に5件以上コメントしていないかチェック
+        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+        int recentCommentCount = commentRepository.countRecentComments(user.getId(), oneMinuteAgo);
+        if (recentCommentCount >= 5) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("1分以内に5件以上のコメントはできません");
+        }
+
         Comment comment = new Comment();
         comment.setContent(form.getContent());
         comment.setUser(user);
