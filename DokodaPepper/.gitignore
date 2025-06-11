@@ -5,8 +5,12 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### images folda ###
-/src/main/resources/static/images/
+# images フォルダ内のすべてのファイルを無視
+/src/main/resources/static/images/*
+
+# ただし default.jpg は除外（＝追跡対象にする）
+!/src/main/resources/static/images/default.jpg
+
 
 /src/main/resources/application.properties
 
